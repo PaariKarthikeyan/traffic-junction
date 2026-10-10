@@ -14,9 +14,11 @@ public class Junction {
         Kind(String l, boolean r, int... a) { label = l; ring = r; angles = a; }
     }
 
-    public static final double BASE_L = 11, R = 60, ARM = 420;
-    /** Distance from the stop line to the zebra-crossing centre, along the arm. */
-    public static final double CROSSING_OFFSET = 15;
+    public static final double BASE_L = 11, R = 60, ARM = 650;
+    /** Distance from the junction mouth to the zebra-crossing centre, along the arm. */
+    public static final double CROSSING_OFFSET = 16;
+    /** Distance from junction mouth to stop line, ensuring vehicles stop well before the zebra crossing. */
+    public static final double STOP_LINE_OFFSET = 38;
 
     public final Kind kind;
     public final int laneCount;
@@ -79,8 +81,10 @@ public class Junction {
         }
     }
 
-    /** Free (unsignalised) left turn: every non-roundabout junction when enabled. */
-    public boolean freeLeft(Route r) { return freeLeftEnabled && !kind.ring && r.turn == 'L'; }
+    /** Free (unsignalised) left turn: only the immediate adjacent left exit (slip lane). */
+    public boolean freeLeft(Route r) {
+        return freeLeftEnabled && !kind.ring && r.turn == 'L' && r.to == (r.from + 1) % dir.length;
+    }
 
     /** Lateral offset from arm centre-line for the given lane (0 = innermost). */
     private double laneOffset(int lane) { return BASE_L * (2 * lane + 1); }
@@ -97,7 +101,7 @@ public class Junction {
         double[] oi = {-A[1], A[0]}, oo = {B[1], -B[0]};
         double[] p0 = pt(A, ARM, oi, off), e = pt(A, stop, oi, off);
         double[] x = pt(B, stop, oo, off), end = pt(B, ARM, oo, off);
-        r.gate = ARM - stop;
+        r.gate = ARM - (stop + STOP_LINE_OFFSET);
         r.pts.add(p0);
         r.pts.add(e);
         if (!kind.ring) {
